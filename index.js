@@ -38,7 +38,8 @@ async function main() {
       bundle.urlL = `${previewDomain}${urlPath}`;
     });
 
-    bundles = bundles.slice(0, 2); // Limit to top 10 bundles
+    bundles = bundles.slice(0, 10); // Limit to top 10 bundles
+
     const result = await collectAll(bundles, deviceType);
     const { branch, main } = result;
     checkBranchVsMain(branch, main)
