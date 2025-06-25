@@ -10,10 +10,15 @@ export function parseArguments() {
       default: 'cwv',
       choices: ['cwv', 'ui', 'ux', 'errors']
     })
-    .option('url', {
-      alias: 'u',
-      describe: 'URL to analyze',
+    .option('previewUrl', {
+      alias: 'pu',
+      describe: 'Preview Url to analyze',
       default: 'www.shredit.com',
+      type: 'string'
+    })
+    .option('liveUrl', {
+      alias: 'lu', 
+      describe: 'Live Url to analyze',
       type: 'string'
     })
     .option('device', {
@@ -27,10 +32,9 @@ export function parseArguments() {
       alias: 'dk',
       describe: 'Domain key for the analysis',
       type: 'string',
-      default: "990874FF-082E-4910-97CE-87692D9E8C99-8E11F549"
     })
     .check((argv) => {
-      if (!argv.url) {
+      if (!argv.previewUrl || !argv.liveUrl) {
         throw new Error('--url must be provided');
       }
       if (!argv.domainkey) {

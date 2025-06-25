@@ -11,6 +11,7 @@
  */
 
 import lighthouse from 'lighthouse';
+import psi from 'psi';
 import fs from 'fs';
 
 // Cleans up large images from the Lighthouse JSON report
@@ -39,29 +40,81 @@ async function runLocalLighthouse(url, deviceType) {
   return result.lhr; // Return the LighthouseResult object
 }
 
+async function runLighthouse(url, deviceType){
+  return await psi(url, {
+    key: process.env.GOOGLE_PAGESPEED_INSIGHTS_API_KEY,
+    strategy: deviceType
+  })
+}
+
+export async function checkBranchVsMain(branchPages, mainPages) {
+  const metrics = ['cls', 'lcp', 'inp', 'ettfb'];
+  let hasRegression = false;
+
+  branchPages.forEach((branchResult, idx) => {
+    const mainResult = mainPages[idx];
+    const url = branchResult.url || `Page ${idx}`; // Optional, if your collect() includes URL
+
+    metrics.forEach((metric) => {
+      const branchValue = branchResult[metric] ?? null;
+      const mainValue = mainResult[metric] ?? null;
+
+      // Skip if either is missing (optional, remove this block if you want to fail on missing data)
+      if (branchValue === null || mainValue === null) return;
+
+      if (branchValue > mainValue) {
+        console.log(
+          `❌ Regression in [${metric.toUpperCase()}] on ${url}: branch=${branchValue.toFixed(3)} → main=${mainValue.toFixed(3)}`
+        );
+        hasRegression = true;
+      }
+    });
+  });
+
+  if (hasRegression) {
+    console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
+    process.exit(1);
+  } else {
+    console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
+  }
+}
+
 export async function collect(pageUrl, deviceType) {
   console.log(`Running Lighthouse for ${pageUrl} on ${deviceType}`);
-  
-  const lhr = await runLocalLighthouse(pageUrl, deviceType);
-  const cleaned = cleanup({ data: { lighthouseResult: lhr } });  // Wrap to match your existing summarize input
+  const resultObj = {}
+  const lhr = await runLighthouse(pageUrl, deviceType);
+  const audits = lhr.data.lighthouseResult.audits;
 
-  cacheResults(pageUrl, deviceType, 'lighthouse', cleaned);
-  const summary = summarize(cleaned);
-  cacheResults(pageUrl, deviceType, 'lighthouse', summary);
+  const cls = audits['cumulative-layout-shift']?.numericValue ?? null;
+  const lcp = audits['largest-contentful-paint']?.numericValue ?? null;
+  const inp = audits['interactive']?.numericValue ?? null;
+  const ettfb = audits['server-response-time']?.numericValue ?? null;
 
-  // Optional: Save raw JSON report for debugging
-  fs.writeFileSync(`.cache/${encodeURIComponent(pageUrl)}-${deviceType}.report.json`, JSON.stringify(lhr, null, 2));
-
-  return { full: cleaned, summary };
+  return { cls, lcp, inp, ettfb };
 }
 
 export async function collectAll(pages, deviceType) {
-  const tasks = [];
+  const realPages = [];
+  const experimentalPages = [];
 
   pages.forEach((page) => {
-    tasks.push(collect(page, 'desktop'));
-    tasks.push(collect(page, 'mobile'));
+    const { urlL } = page;
+    const updatedUrl = urlL.replace(/^(https:\/\/)[^/]*?(?=--)/, '$1main');
+
+    experimentalPages.push(collect(updatedUrl, 'desktop'));
+    experimentalPages.push(collect(updatedUrl, 'mobile'));
   });
 
-  return Promise.all(tasks);
+  pages.forEach((page) => {
+    const { urlL } = page;
+
+    realPages.push(collect(urlL, 'desktop'));
+    realPages .push(collect(urlL, 'mobile'));
+  })
+
+
+  const branch = await Promise.all(experimentalPages);
+  const main = await Promise.all(realPages)
+
+  return { branch, main }
 }

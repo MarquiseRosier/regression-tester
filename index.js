@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { getAllBundles } from './src/tools/bundles.js';
 import { parseArguments } from './src/cli/cliIndex.js';
-import { collectAll } from './src/tools/psi.js';
+import { collectAll, checkBranchVsMain } from './src/tools/psi.js';
 
 
 // Load environment variables
@@ -14,20 +14,34 @@ async function main() {
   // Extract parameters
   const metric = argv.metric;
   const deviceType = argv.device;
-  const url = argv.url;
-  const domainkey = argv.domainkey
+  const liveUrl = argv.liveUrl;
+  const previewUrl = argv.previewUrl;
+  const domainkey = argv.domainkey;
 
   if (metric === 'cwv') {
-    const bundles = await getAllBundles(url, domainkey, "2025-06-01", "2025-06-30", 'pageviews');
+    let bundles = await getAllBundles(liveUrl, domainkey, "2025-01-01", "2025-06-30", 'pageviews');
 
     bundles.sort((a, b) => {
       return b['sum'] - a['sum'];
     }); 
 
-    console.log(bundles)
+    bundles.forEach((bundle) => {
+      const { urlL } = bundle;
 
-    // Import and run the PSI tool
+      // Extract path from urlL
+      const urlPath = new URL(urlL).pathname;
+
+      // Extract domain from previewUrl (without path/query)
+      const previewDomain = new URL(previewUrl).origin;
+
+      // Rebuild urlL using preview domain + original path
+      bundle.urlL = `${previewDomain}${urlPath}`;
+    });
+
+    bundles = bundles.slice(0, 2); // Limit to top 10 bundles
     const result = await collectAll(bundles, deviceType);
+    const { branch, main } = result;
+    checkBranchVsMain(branch, main)
     console.log(result);
   }
 }

@@ -13,9 +13,16 @@
 import { series, DataChunks, utils } from '@adobe/rum-distiller';
 
 export async function loadBundles(url, date, domainkey) {
-  const endpoint = `https://bundles.aem.page/bundles/${url}/${date}?domainkey=${domainkey}`;
+  const cleanedUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const endpoint = `https://bundles.aem.page/bundles/${cleanedUrl}/${date}?domainkey=${domainkey}`;
   const resp = await fetch(endpoint);
-  const data = await resp.json();
+  let data;
+  if(resp.ok){
+    data = await resp.json();
+  }
+  else{
+    data = []
+  }
 
   return data;
 }

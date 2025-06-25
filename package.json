@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node index.js --metric cwv --device desktop --url adobe.com"
+    "test": "node index.js --domainkey A78D09BF-421F-495F-B4D4-1486F6BFD096-8E11F549 --metric cwv --device desktop --previewUrl https://issue-5--bbird--aemsites.aem.page/ --liveUrl https://www.bbird.live"
   },
   "repository": {
     "type": "git",
