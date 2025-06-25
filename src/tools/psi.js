@@ -71,12 +71,7 @@ export async function checkBranchVsMain(branchPages, mainPages) {
     });
   });
 
-  if (hasRegression) {
-    console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
-    process.exit(1);
-  } else {
-    console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
-  }
+  return hasRegression;
 }
 
 export async function collect(pageUrl, deviceType) {

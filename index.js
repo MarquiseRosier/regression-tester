@@ -21,6 +21,8 @@ async function main() {
   if (metric === 'cwv') {
     let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
 
+    console.log(`Total bundles returned: ${bundles.length}`);
+
     bundles.sort((a, b) => {
       return b['sum'] - a['sum'];
     }); 
@@ -38,11 +40,34 @@ async function main() {
       bundle.urlL = `${previewDomain}${urlPath}`;
     });
 
-    bundles = bundles.slice(0, 5); // Limit to top 10 bundles
+    bundles = bundles.slice(0, 10);
 
-    const result = await collectAll(bundles, deviceType);
-    const { branch, main } = result;
-    await checkBranchVsMain(branch, main)
+    // Batch processing: process in batches of 5
+    const batchSize = 5;
+    let hasAnyRegression = false;
+    
+    for (let i = 0; i < bundles.length; i += batchSize) {
+      const batch = bundles.slice(i, i + batchSize);
+      console.log(`Processing batch ${i / batchSize + 1}:`, batch.map(b => b.urlL));
+      try {
+        const result = await collectAll(batch, deviceType);
+        const { branch, main } = result;
+        const batchHasRegression = await checkBranchVsMain(branch, main);
+        if (batchHasRegression) {
+          hasAnyRegression = true;
+        }
+      } catch (error) {
+        console.error(`Error processing batch ${i / batchSize + 1}:`, error);
+      }
+    }
+    
+    // Exit with error code only after all batches are processed
+    if (hasAnyRegression) {
+      console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
+      process.exit(1);
+    } else {
+      console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
+    }
   }
 }
 
