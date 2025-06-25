@@ -48,7 +48,7 @@ async function runLighthouse(url, deviceType){
 }
 
 export async function checkBranchVsMain(branchPages, mainPages) {
-  const metrics = ['cls', 'lcp', 'inp', 'ettfb'];
+  const metrics = ['lhs'];
   let hasRegression = false;
 
   branchPages.forEach((branchResult, idx) => {
@@ -64,7 +64,7 @@ export async function checkBranchVsMain(branchPages, mainPages) {
 
       if (branchValue > mainValue) {
         console.log(
-          `❌ Regression in [${metric.toUpperCase()}] on ${url}: branch=${branchValue.toFixed(3)} → main=${mainValue.toFixed(3)}`
+          `❌ Regression in [${metric.toUpperCase()}] on ${url}: branch=${branchValue} → main=${mainValue}`
         );
         hasRegression = true;
       }
@@ -83,14 +83,9 @@ export async function collect(pageUrl, deviceType) {
   console.log(`Running Lighthouse for ${pageUrl} on ${deviceType}`);
   const resultObj = {}
   const lhr = await runLighthouse(pageUrl, deviceType);
-  const audits = lhr.data.lighthouseResult.audits;
+  const lhs = lhr.data.lighthouseResult.categories.performance.score * 100;
 
-  const cls = audits['cumulative-layout-shift']?.numericValue ?? null;
-  const lcp = audits['largest-contentful-paint']?.numericValue ?? null;
-  const inp = audits['interactive']?.numericValue ?? null;
-  const ettfb = audits['server-response-time']?.numericValue ?? null;
-
-  return { cls, lcp, inp, ettfb };
+  return { lhs };
 }
 
 export async function collectAll(pages, deviceType) {
