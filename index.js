@@ -19,7 +19,7 @@ async function main() {
   const domainkey = argv.domainkey;
 
   if (metric === 'cwv') {
-    let bundles = await getAllBundles(liveUrl, domainkey, "2025-01-01", "2025-06-30", 'pageviews');
+    let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
 
     bundles.sort((a, b) => {
       return b['sum'] - a['sum'];
