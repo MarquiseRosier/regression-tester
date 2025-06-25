@@ -13,7 +13,7 @@
 import { series, DataChunks, utils } from '@adobe/rum-distiller';
 
 export async function loadBundles(url, date, domainkey) {
-  const cleanedUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const cleanedUrl = new URL(url).hostname;
   const endpoint = `https://bundles.aem.page/bundles/${cleanedUrl}/${date}?domainkey=${domainkey}`;
   const resp = await fetch(endpoint);
   let data;
