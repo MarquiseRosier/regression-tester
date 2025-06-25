@@ -83,8 +83,8 @@ export async function getDataChunks(url, domainkey, startdate, enddate) {
     dateList.push(d.toISOString().slice(0, 10).replace(/-/g, '/'));
   }
 
+  console.log(`Bundles URL: ${url}`)
   const r = (await Promise.all(dateList.map((date) => loadBundles(url, date, domainkey)))).flat();
-
   return r;
 }
 
@@ -227,6 +227,8 @@ export async function getAllBundles(url, domainkey, startDate, endDate, aggregat
   if (!url || !domainkey || !aggregation) {
     return badRequest('URL, domainKey, and aggregation are required');
   }
+
+  console.log(`GETTING BUNDLES WITH url: ${url}`)
 
   const dataChunks = await getDataChunks(url, domainkey, startDate, endDate, aggregation);
   const stats = await getStatistic(url, dataChunks, aggregation);

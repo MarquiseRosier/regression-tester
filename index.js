@@ -42,7 +42,6 @@ async function main() {
     const result = await collectAll(bundles, deviceType);
     const { branch, main } = result;
     checkBranchVsMain(branch, main)
-    console.log(result);
   }
 }
 
