@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "a regression testing software for eds sites",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "node index.js --metric cwv --device desktop --url adobe.com"
   },
@@ -21,5 +22,13 @@
   "bugs": {
     "url": "https://github.com/MarquiseRosier/regression-tester/issues"
   },
-  "homepage": "https://github.com/MarquiseRosier/regression-tester#readme"
+  "homepage": "https://github.com/MarquiseRosier/regression-tester#readme",
+  "dependencies": {
+    "@adobe/rum-distiller": "^1.16.3",
+    "chrome-launcher": "^1.2.0",
+    "dotenv": "^16.5.0",
+    "lighthouse": "^12.6.1",
+    "psi": "^4.1.0",
+    "yargs": "^18.0.0"
+  }
 }
