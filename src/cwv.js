@@ -66,6 +66,9 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
                 console.log(`Main URL: ${mainUrl}`);
                 console.log(`Branch URL: ${branchUrl}`);
 
+
+                console.log(response.result);
+
                 if (response && response?.hasAnyRegression) {
                     hasRegressionUrls.push(branchUrl);
                     console.log(`❌ Regression detected for ${branchUrl}`);
@@ -73,7 +76,6 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
                     console.log(`✅ No regression detected for ${branchUrl}`);
                 }
 
-                console.log(response.result);
                 console.log(`--------------------Bundle ${j + 1} processed successfully.---------------------`);
                 console.log('\n\n\n\n');
             }
