@@ -6,7 +6,12 @@ let encoder;
 
 export async function compareBundles(mainUrl, branchUrl, psiData1, psiData2) {
     const prompt = `
-You are a web performance analyst comparing PageSpeed Insights reports. Return analysis in GitHub-flavored.
+You are a web performance analyst comparing PageSpeed Insights reports. Return analysis in the following JSON format ONLY:
+
+{
+  "result": "your detailed analysis here",
+  "hasAnyRegression": true or false
+}
 
 **URLs Being Analyzed:**
 - Production: ${mainUrl}
@@ -72,6 +77,8 @@ Create a table for key diagnostic changes:
 - [ ] Fix 3: [Specific task]
 - [ ] Monitor: [Metrics to track]
 
+Set hasAnyRegression to true if any Core Web Vitals metrics (Performance Score, FCP, LCP, Speed Index, TBT, CLS) have gotten worse by more than 5%, otherwise set to false.
+
 ## 📋 Data
 **Production PSI Data:**
 \`\`\`json
@@ -82,6 +89,8 @@ ${JSON.stringify(psiData1, null, 2)}
 \`\`\`json
 ${JSON.stringify(psiData2, null, 2)}
 \`\`\`
+
+IMPORTANT: Return ONLY valid JSON in the exact format specified above. Do not include any text before or after the JSON object.
     `;
 
     console.log("Using model:", process.env.SELECTED_MODEL || 'openai');
@@ -92,7 +101,19 @@ ${JSON.stringify(psiData2, null, 2)}
     } else {
         response = await callOpenAI(prompt);
     }
-    return response;
+
+    // Parse the response to ensure it's valid JSON
+    try {
+        const parsedResponse = JSON.parse(response);
+        return parsedResponse;
+    } catch (error) {
+        // If parsing fails, wrap the response in the required format
+        console.warn('Response was not valid JSON, wrapping it:', error.message);
+        return {
+            result: response,
+            hasAnyRegression: false // Default to false if we can't determine from response
+        };
+    }
 }
 
 export async function callOpenAI(prompt) {
@@ -100,18 +121,30 @@ export async function callOpenAI(prompt) {
     //     const response = await openAichat.call([
     //         new HumanMessage(prompt)
     //     ]);
-    //     return response.text;
+    //     return formatModelResponse(response.text);
     // } catch (error) {
     //     console.error('OpenAI API error:', error);
     //     throw new Error(`OpenAI analysis failed: ${error.message}`);
     // }
 }
 
+
+export function formatModelResponse(responseText) {
+    // First, try to extract JSON if it's wrapped in code blocks
+    let jsonText = responseText;
+    if (responseText.includes('```json')) {
+        jsonText = responseText.split('```json')[1].split('```')[0].trim();
+    } else if (responseText.includes('```')) {
+        jsonText = responseText.split('```')[1].split('```')[0].trim();
+    }
+    return jsonText;
+}
+
 export async function callGemini(prompt) {
     try {
         const result = await geminiModel.generateContent(prompt);
         const response = await result.response;
-        return response.text();
+        return formatModelResponse(response.text());
     } catch (error) {
         console.error('Gemini API error:', error);
         throw new Error(`Gemini analysis failed: ${error.message}`);

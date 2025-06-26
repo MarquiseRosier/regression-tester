@@ -5,6 +5,11 @@ import {getAllBundles} from "./tools/bundles.js";
 
 export async function processCwv(metric, deviceType, liveUrl, previewUrl, domainkey) {
 
+    // const result = await compareBundles("cskbsck.com", "cskbscbk.com", {}, {});
+    //
+    // console.log(result);
+    // return;
+
     let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
 
     console.log(`Total bundles returned: ${bundles.length}`);
@@ -32,6 +37,8 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
     const batchSize = 5;
     let hasAnyRegression = false;
 
+    let hasRegressionUrls = [];
+
     for (let i = 0; i < bundles.length; i += batchSize) {
         const batch = bundles.slice(i, i + batchSize);
         console.log(`Processing batch ${i / batchSize + 1}:`, batch.map(b => b.urlL));
@@ -53,21 +60,26 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
                 const mainPromptData = extractMetrics(main[j], mainUrl);
                 const branchPromptData = extractMetrics(branch[j], branchUrl);
 
-                const result = await compareBundles(mainUrl, branchUrl, mainPromptData, branchPromptData);
+                const response = await compareBundles(mainUrl, branchUrl, mainPromptData, branchPromptData);
                 console.log(`\n\n\n\n--------------------Bundle ${j + 1}---------------------`);
                 //print the urls
                 console.log(`Main URL: ${mainUrl}`);
                 console.log(`Branch URL: ${branchUrl}`);
-                console.log(result);
-                console.log('\n\n');
+
+                if (response && response?.hasAnyRegression) {
+                    hasRegressionUrls.push(branchUrl);
+                    console.log(`❌ Regression detected for ${branchUrl}`);
+                }
+
+                console.log(response.result);
                 console.log(`--------------------Bundle ${j + 1} processed successfully.---------------------`);
                 console.log('\n\n\n\n');
             }
 
-            const batchHasRegression = await checkBranchVsMain(branch, main);
-            if (batchHasRegression) {
-                hasAnyRegression = true;
-            }
+            // const batchHasRegression = await checkBranchVsMain(branch, main);
+            // if (batchHasRegression) {
+            //     hasAnyRegression = true;
+            // }
         } catch (error) {
             console.error(`Error processing batch ${i / batchSize + 1}:`, error);
         }
@@ -80,6 +92,17 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
     // } else {
     //     console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
     // }
+
+    if (hasRegressionUrls.length > 0) {
+        console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
+        console.log('Regressed URLs:\n');
+        hasRegressionUrls.forEach(url => {
+            console.log(`- ${url}`);
+        });
+        process.exit(1);
+    } else {
+        console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
+    }
 }
 
 
