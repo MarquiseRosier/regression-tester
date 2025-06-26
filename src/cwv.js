@@ -26,7 +26,7 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
         bundle.urlL = `${previewDomain}${urlPath}`;
     });
 
-    bundles = bundles.slice(0, 10);
+    bundles = bundles.slice(0, 5);
 
     // Batch processing: process in batches of 5
     const batchSize = 5;
