@@ -1,89 +1,122 @@
 import {HumanMessage} from "@langchain/core/messages";
-import {chat} from "./llmFactory.js";
-
+import {geminiModel, openAichat} from "./llmFactory.js";
+import dotenv from "dotenv";
+dotenv.config();
 let encoder;
 
 export async function compareBundles(mainUrl, branchUrl, psiData1, psiData2) {
     const prompt = `
-You are an expert **web performance analyst** tasked with comparing two **PageSpeed Insights (PSI) reports** in JSON format:
+You are a web performance analyst comparing PageSpeed Insights reports. Return analysis in GitHub-flavored Markdown.
 
-- **Production URL**: ${mainUrl}
-- **Test URL**: ${branchUrl}
+**URLs Being Analyzed:**
+- Production: ${mainUrl}
+- Test Branch: ${branchUrl}
 
----
+## 📊 Performance Metrics Comparison
+Create a comparison table for Core Web Vitals with status indicators:
 
-## 🔍 Evaluation Objectives:
+| Metric | Production | Test Branch | Difference | Status |
+|--------|------------|-------------|------------|---------|
+| Performance Score | [value] | [value] | [±value (±%)] | [✅⚠️➡️] |
+| FCP | [value]ms | [value]ms | [±value (±%)] | [✅⚠️➡️] |
+| LCP | [value]ms | [value]ms | [±value (±%)] | [✅⚠️➡️] |
+| Speed Index | [value]ms | [value]ms | [±value (±%)] | [✅⚠️➡️] |
+| TBT | [value]ms | [value]ms | [±value (±%)] | [✅⚠️➡️] |
+| CLS | [value] | [value] | [±value (±%)] | [✅⚠️➡️] |
 
-### 1. **Compare Core Web Vitals & Key Performance Metrics**
-Analyze the following metrics:
+**Then analyze each significant change with headings:**
+- ### ✅ [Metric Name] - Improved by X%
+- ### ⚠️ [Metric Name] - Regressed by X%  
+- ### ➡️ [Metric Name] - Minimal Change
 
-- Performance Score
-- First Contentful Paint (FCP)
-- Largest Contentful Paint (LCP)
-- Speed Index
-- Total Blocking Time (TBT)
-- Cumulative Layout Shift (CLS)
+## 🔍 Diagnostics & Opportunities Analysis
+Create a table for key diagnostic changes:
 
-For each metric:
-- Display values from both environments (Production vs. Test)
-- Calculate the absolute and percentage **difference**
-- Indicate if the change is an **improvement or regression**
-- Categorize regressions as **minor**, **moderate**, or **significant** based on standard performance thresholds
+| Issue Category | Production | Test Branch | Impact | Status |
+|----------------|------------|-------------|---------|---------|
+| Image Optimization | [details] | [details] | [KB/ms saved] | [🟢🔴🟡⚪] |
+| JS/CSS Minification | [details] | [details] | [KB/ms saved] | [🟢🔴🟡⚪] |
+| Resource Preloading | [details] | [details] | [ms saved] | [🟢🔴🟡⚪] |
+| LCP Element | [details] | [details] | [ms impact] | [🟢🔴🟡⚪] |
 
----
+**Then detail each significant change:**
+- ### 🟢 [Issue] - Resolved (Est. savings: X KB/ms)
+- ### 🔴 [Issue] - New Problem (Est. impact: X KB/ms)
+- ### 🟡 [Issue] - Partially Fixed (Est. remaining: X KB/ms)
 
-### 2. **Bottleneck & Diagnostics Analysis**
-Inspect and compare the following bottlenecks and diagnostics:
+## 🎯 Summary & Recommendations
 
-- **Minification issues** (CSS/JS)
-- **Image optimization** (resizing, compression, format)
-- **Preloading of key resources** (especially LCP image)
-- **LCP Element details**: 
-  - Image tag snippet
-  - Selector
-  - Size & position
-  - Loading behavior
-- **Flagged diagnostics with estimated savings**
+**Overall Performance Verdict:**
+- ### ✅ Overall: Performance Improved by X%
+- ### ⚠️ Overall: Performance Regressed by X%
+- ### ➡️ Overall: Performance Unchanged (<5% difference)
 
-For each bottleneck:
-- Highlight differences (e.g., added, removed, improved)
-- Indicate if the **Test version resolves, introduces, or worsens** the issue
-- Include estimated impact (e.g., KB saved, ms improved)
+### 🚀 **TOP 3 ACTIONABLE IMPROVEMENTS** (Priority Order):
+1. **[High Impact Fix]** - Expected improvement: X ms/KB
+   - Specific implementation steps
+   - Expected performance gain
+2. **[Medium Impact Fix]** - Expected improvement: X ms/KB  
+   - Specific implementation steps
+   - Expected performance gain
+3. **[Quick Win Fix]** - Expected improvement: X ms/KB
+   - Specific implementation steps
+   - Expected performance gain
 
----
+### ⚠️ **CRITICAL ISSUES REQUIRING IMMEDIATE ATTENTION:**
+- Issue 1: [Description + Fix]
+- Issue 2: [Description + Fix]
 
-### 3. ✅ Final Verdict
-Provide a concise summary with:
+### 📋 **COMPLETE ACTION CHECKLIST:**
+- [ ] Fix 1: [Specific task]
+- [ ] Fix 2: [Specific task]  
+- [ ] Fix 3: [Specific task]
+- [ ] Monitor: [Metrics to track]
 
-- A clear verdict: **Is the Test version overall better, worse, or equivalent** to Production?
-- A bullet list of:
-  - ✅ **Key improvements**
-  - ⚠️ **Critical regressions or concerns**
-  - 🛠️ **Neutral or unchanged areas**
-
----
-
-## 🔢 Input Data
-
-### PSI Data — Production (\`psiData1\`):
+## 📋 Data
+**Production PSI Data:**
 \`\`\`json
 ${JSON.stringify(psiData1, null, 2)}
 \`\`\`
 
-### PSI Data — Test (\`psiData2\`):
+**Test Branch PSI Data:**
 \`\`\`json
 ${JSON.stringify(psiData2, null, 2)}
 \`\`\`
     `;
 
-    const response = await chat.call([
-        new HumanMessage(prompt)
-    ]);
+    console.log("Using model:", process.env.SELECTED_MODEL || 'openai');
 
-    console.log(`Response: ${response.text}`);
+    let response;
+    if (process.env.SELECTED_MODEL === 'gemini') {
+        response = await callGemini(prompt);
+    } else {
+        response = await callOpenAI(prompt);
+    }
     return response;
 }
 
+export async function callOpenAI(prompt) {
+    try {
+        const response = await openAichat.call([
+            new HumanMessage(prompt)
+        ]);
+        return response.text;
+    } catch (error) {
+        console.error('OpenAI API error:', error);
+        throw new Error(`OpenAI analysis failed: ${error.message}`);
+    }
+}
+
+export async function callGemini(prompt) {
+    try {
+        const result = await geminiModel.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.error('Gemini API error:', error);
+        throw new Error(`Gemini analysis failed: ${error.message}`);
+    }
+}
 
 export function summarize(psiData) {
     if (!psiData?.data?.lighthouseResult?.audits) {

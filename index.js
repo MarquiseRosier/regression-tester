@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import {getAllBundles} from './src/tools/bundles.js';
 import {parseArguments} from './src/cli/cliIndex.js';
 import {collectAll, checkBranchVsMain} from './src/tools/psi.js';
-import {compareBundles, summarize} from "./src/utils.js";
 import {processCwv} from "./src/cwv.js";
 
 // Load environment variables
@@ -20,7 +19,7 @@ async function main() {
     const domainkey = argv.domainkey;
 
     if (metric === 'cwv') {
-        await processCwv( metric, deviceType, liveUrl, previewUrl, domainkey);
+        await processCwv(metric, deviceType, liveUrl, previewUrl, domainkey);
     }
 }
 
