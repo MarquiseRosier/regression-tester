@@ -80,7 +80,7 @@ export async function collect(pageUrl, deviceType) {
   const lhr = await runLighthouse(pageUrl, deviceType);
   const lhs = lhr.data.lighthouseResult.categories.performance.score * 100;
 
-  return { lhs };
+  return { lhs, ...lhr };
 }
 
 export async function collectAll(pages, deviceType) {
@@ -103,8 +103,10 @@ export async function collectAll(pages, deviceType) {
   })
 
 
-  const branch = await Promise.all(experimentalPages);
-  const main = await Promise.all(realPages)
+  const branch = await Promise.all(realPages);
+  const main = await Promise.all(experimentalPages)
+
+
 
   return { branch, main }
 }

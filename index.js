@@ -1,78 +1,88 @@
 import dotenv from 'dotenv';
-import { getAllBundles } from './src/tools/bundles.js';
-import { parseArguments } from './src/cli/cliIndex.js';
-import { collectAll, checkBranchVsMain } from './src/tools/psi.js';
-
+import {getAllBundles} from './src/tools/bundles.js';
+import {parseArguments} from './src/cli/cliIndex.js';
+import {collectAll, checkBranchVsMain} from './src/tools/psi.js';
+import {compareBundles, summarize} from "./src/utils.js";
 
 // Load environment variables
 dotenv.config();
 
 async function main() {
-  // Parse command line arguments
-  const argv = parseArguments();
-  
-  // Extract parameters
-  const metric = argv.metric;
-  const deviceType = argv.device;
-  const liveUrl = argv.liveUrl;
-  const previewUrl = argv.previewUrl;
-  const domainkey = argv.domainkey;
+    // Parse command line arguments
+    const argv = parseArguments();
 
-  if (metric === 'cwv') {
-    let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
+    // Extract parameters
+    const metric = argv.metric;
+    const deviceType = argv.device;
+    const liveUrl = argv.liveUrl;
+    const previewUrl = argv.previewUrl;
+    const domainkey = argv.domainkey;
 
-    console.log(`Total bundles returned: ${bundles.length}`);
+    if (metric === 'cwv') {
+        let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
 
-    bundles.sort((a, b) => {
-      return b['sum'] - a['sum'];
-    }); 
+        console.log(`Total bundles returned: ${bundles.length}`);
 
-    bundles.forEach((bundle) => {
-      const { urlL } = bundle;
+        bundles.sort((a, b) => {
+            return b['sum'] - a['sum'];
+        });
 
-      // Extract path from urlL
-      const urlPath = new URL(urlL).pathname;
+        bundles.forEach((bundle) => {
+            const {urlL} = bundle;
 
-      // Extract domain from previewUrl (without path/query)
-      const previewDomain = new URL(previewUrl).origin;
+            // Extract path from urlL
+            const urlPath = new URL(urlL).pathname;
 
-      // Rebuild urlL using preview domain + original path
-      bundle.urlL = `${previewDomain}${urlPath}`;
-    });
+            // Extract domain from previewUrl (without path/query)
+            const previewDomain = new URL(previewUrl).origin;
 
-    bundles = bundles.slice(0, 10);
+            // Rebuild urlL using preview domain + original path
+            bundle.urlL = `${previewDomain}${urlPath}`;
+        });
 
-    // Batch processing: process in batches of 5
-    const batchSize = 5;
-    let hasAnyRegression = false;
-    
-    for (let i = 0; i < bundles.length; i += batchSize) {
-      const batch = bundles.slice(i, i + batchSize);
-      console.log(`Processing batch ${i / batchSize + 1}:`, batch.map(b => b.urlL));
-      try {
-        const result = await collectAll(batch, deviceType);
-        const { branch, main } = result;
-        const batchHasRegression = await checkBranchVsMain(branch, main);
-        if (batchHasRegression) {
-          hasAnyRegression = true;
+        bundles = bundles.slice(0, 1);
+
+        // Batch processing: process in batches of 5
+        const batchSize = 5;
+        let hasAnyRegression = false;
+
+        for (let i = 0; i < bundles.length; i += batchSize) {
+            const batch = bundles.slice(i, i + batchSize);
+            console.log(`Processing batch ${i / batchSize + 1}:`, batch.map(b => b.urlL));
+            try {
+                const result = await collectAll(batch, deviceType);
+
+
+                const {branch, main} = result;
+
+                for (let j = 0; j < main.length; j++) {
+                    console.log(`Comparing bundle`);
+                    const mainSummary = summarize(main[j]);
+                    const branchSummary = summarize(branch[j]);
+                    await compareBundles(mainSummary, branchSummary);
+                }
+
+                const batchHasRegression = await checkBranchVsMain(branch, main);
+                if (batchHasRegression) {
+                    hasAnyRegression = true;
+                }
+            } catch (error) {
+                console.error(`Error processing batch ${i / batchSize + 1}:`, error);
+            }
         }
-      } catch (error) {
-        console.error(`Error processing batch ${i / batchSize + 1}:`, error);
-      }
+
+        // Exit with error code only after all batches are processed
+        if (hasAnyRegression) {
+            console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
+            process.exit(1);
+        } else {
+            console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
+        }
     }
-    
-    // Exit with error code only after all batches are processed
-    if (hasAnyRegression) {
-      console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
-      process.exit(1);
-    } else {
-      console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
-    }
-  }
 }
 
 // Run the main function
 main().catch((error) => {
-  console.error('Error:', error);
-  process.exit(1);
+    console.error('Error:', error);
+    process.exit(1);
 });
