@@ -1,6 +1,4 @@
-
-import { AzureChatOpenAI } from '@langchain/openai';
-import {HumanMessage, SystemMessage} from "@langchain/core/messages";
+import {AzureChatOpenAI} from '@langchain/openai';
 import dotenv from "dotenv";
 // Replace these with your actual configuration
 dotenv.config();

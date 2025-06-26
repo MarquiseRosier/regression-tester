@@ -1,92 +1,87 @@
 import {HumanMessage} from "@langchain/core/messages";
 import {chat} from "./llmFactory.js";
-import { Tiktoken } from 'js-tiktoken/lite';
-import cl100k_base from 'js-tiktoken/ranks/cl100k_base';
 
 let encoder;
 
-// export async  function compareBundlesT() {
-//     // Calling open api
-//
-//     const response = await chat.call([
-//         new HumanMessage("What is the capital of France?")
-//     ]);
-//
-//     console.log("Response:", response.text);
-//
-// }
-
-
-export async function compareBundles(psiData1, psiData2) {
+export async function compareBundles(mainUrl, branchUrl, psiData1, psiData2) {
     const prompt = `
-You are a web performance analyst. I will give you two PageSpeed Insights (PSI) reports in JSON format:
+You are an expert **web performance analyst** tasked with comparing two **PageSpeed Insights (PSI) reports** in JSON format:
 
-- \`psiData1\`: Production site data (current live site)
-- \`psiData2\`: Test site data (new changes or upcoming version)
+- **Production URL**: ${mainUrl}
+- **Test URL**: ${branchUrl}
 
-Your task:
-1. Compare the core web vitals and performance metrics between the production and test site.
-2. Detect and highlight any **performance regressions** (drops) in the test site compared to production.
-3. Focus on these metrics:
-   - Performance score
-   - First Contentful Paint (FCP)
-   - Largest Contentful Paint (LCP)
-   - Speed Index
-   - Total Blocking Time (TBT)
-   - Cumulative Layout Shift (CLS)
+---
+
+## 🔍 Evaluation Objectives:
+
+### 1. **Compare Core Web Vitals & Key Performance Metrics**
+Analyze the following metrics:
+
+- Performance Score
+- First Contentful Paint (FCP)
+- Largest Contentful Paint (LCP)
+- Speed Index
+- Total Blocking Time (TBT)
+- Cumulative Layout Shift (CLS)
 
 For each metric:
-- State the values from both production and test data.
-- Quantify the difference.
-- Explain if the test site is better or worse.
-- Indicate the severity of any regression (minor, moderate, significant).
+- Display values from both environments (Production vs. Test)
+- Calculate the absolute and percentage **difference**
+- Indicate if the change is an **improvement or regression**
+- Categorize regressions as **minor**, **moderate**, or **significant** based on standard performance thresholds
 
-Finish with a short summary: Is the test version performing better, worse, or about the same as production?
+---
 
-Here is the production PSI data (psiData1):
+### 2. **Bottleneck & Diagnostics Analysis**
+Inspect and compare the following bottlenecks and diagnostics:
+
+- **Minification issues** (CSS/JS)
+- **Image optimization** (resizing, compression, format)
+- **Preloading of key resources** (especially LCP image)
+- **LCP Element details**: 
+  - Image tag snippet
+  - Selector
+  - Size & position
+  - Loading behavior
+- **Flagged diagnostics with estimated savings**
+
+For each bottleneck:
+- Highlight differences (e.g., added, removed, improved)
+- Indicate if the **Test version resolves, introduces, or worsens** the issue
+- Include estimated impact (e.g., KB saved, ms improved)
+
+---
+
+### 3. ✅ Final Verdict
+Provide a concise summary with:
+
+- A clear verdict: **Is the Test version overall better, worse, or equivalent** to Production?
+- A bullet list of:
+  - ✅ **Key improvements**
+  - ⚠️ **Critical regressions or concerns**
+  - 🛠️ **Neutral or unchanged areas**
+
+---
+
+## 🔢 Input Data
+
+### PSI Data — Production (\`psiData1\`):
+\`\`\`json
 ${JSON.stringify(psiData1, null, 2)}
+\`\`\`
 
-Here is the test PSI data (psiData2):
+### PSI Data — Test (\`psiData2\`):
+\`\`\`json
 ${JSON.stringify(psiData2, null, 2)}
+\`\`\`
     `;
+
     const response = await chat.call([
         new HumanMessage(prompt)
     ]);
 
     console.log(`Response: ${response.text}`);
-
     return response;
-}
-
-
-export const psiSummaryStep = (psiSummary) => `
-${step()} here is the summarized PSI audit for the page load.
-
-${psiSummary}
-`;
-
-
-
-export async function getPsi(pageUrl, deviceType, options) {
-    const { full, summary, fromCache } = await collectPsi(pageUrl, deviceType, options);
-    if (fromCache) {
-        console.log('✓ Loaded PSI data from cache. Estimated token size: ~', estimateTokenSize(full));
-    } else {
-        console.log('✅ Processed PSI data. Estimated token size: ~', estimateTokenSize(full));
-    }
-    return { full, summary };
-}
-
-
-// A crude approximation of the number of tokens in a string
-export function estimateTokenSize(obj) {
-    if (!obj) {
-        return 0;
-    }
-    if (!encoder) {
-        encoder = new Tiktoken(cl100k_base);
-    }
-    return encoder.encode(JSON.stringify(obj)).length;
 }
 
 
@@ -138,7 +133,7 @@ export function summarize(psiData) {
 
     for (const auditId of prioritizedAudits) {
         const audit = audits[auditId];
-        if (!audit || audit.scoreDisplayMode === 'notApplicable' || audit.scoreDisplayMode === 'informational'  || audit.scoreDisplayMode === 'manual') {
+        if (!audit || audit.scoreDisplayMode === 'notApplicable' || audit.scoreDisplayMode === 'informational' || audit.scoreDisplayMode === 'manual') {
             continue;
         }
 

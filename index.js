@@ -3,6 +3,7 @@ import {getAllBundles} from './src/tools/bundles.js';
 import {parseArguments} from './src/cli/cliIndex.js';
 import {collectAll, checkBranchVsMain} from './src/tools/psi.js';
 import {compareBundles, summarize} from "./src/utils.js";
+import {processCwv} from "./src/cwv.js";
 
 // Load environment variables
 dotenv.config();
@@ -19,65 +20,7 @@ async function main() {
     const domainkey = argv.domainkey;
 
     if (metric === 'cwv') {
-        let bundles = await getAllBundles(liveUrl, domainkey, "2024-06-25", "2025-06-30", 'pageviews');
-
-        console.log(`Total bundles returned: ${bundles.length}`);
-
-        bundles.sort((a, b) => {
-            return b['sum'] - a['sum'];
-        });
-
-        bundles.forEach((bundle) => {
-            const {urlL} = bundle;
-
-            // Extract path from urlL
-            const urlPath = new URL(urlL).pathname;
-
-            // Extract domain from previewUrl (without path/query)
-            const previewDomain = new URL(previewUrl).origin;
-
-            // Rebuild urlL using preview domain + original path
-            bundle.urlL = `${previewDomain}${urlPath}`;
-        });
-
-        bundles = bundles.slice(0, 1);
-
-        // Batch processing: process in batches of 5
-        const batchSize = 5;
-        let hasAnyRegression = false;
-
-        for (let i = 0; i < bundles.length; i += batchSize) {
-            const batch = bundles.slice(i, i + batchSize);
-            console.log(`Processing batch ${i / batchSize + 1}:`, batch.map(b => b.urlL));
-            try {
-                const result = await collectAll(batch, deviceType);
-
-
-                const {branch, main} = result;
-
-                for (let j = 0; j < main.length; j++) {
-                    console.log(`Comparing bundle`);
-                    const mainSummary = summarize(main[j]);
-                    const branchSummary = summarize(branch[j]);
-                    await compareBundles(mainSummary, branchSummary);
-                }
-
-                const batchHasRegression = await checkBranchVsMain(branch, main);
-                if (batchHasRegression) {
-                    hasAnyRegression = true;
-                }
-            } catch (error) {
-                console.error(`Error processing batch ${i / batchSize + 1}:`, error);
-            }
-        }
-
-        // Exit with error code only after all batches are processed
-        if (hasAnyRegression) {
-            console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
-            process.exit(1);
-        } else {
-            console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
-        }
+        await processCwv( metric, deviceType, liveUrl, previewUrl, domainkey);
     }
 }
 
