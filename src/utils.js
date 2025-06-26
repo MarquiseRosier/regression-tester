@@ -1,5 +1,5 @@
 import {HumanMessage} from "@langchain/core/messages";
-import {geminiModel, openAichat} from "./llmFactory.js";
+import {geminiModel} from "./llmFactory.js";
 import dotenv from "dotenv";
 dotenv.config();
 let encoder;
@@ -96,15 +96,15 @@ ${JSON.stringify(psiData2, null, 2)}
 }
 
 export async function callOpenAI(prompt) {
-    try {
-        const response = await openAichat.call([
-            new HumanMessage(prompt)
-        ]);
-        return response.text;
-    } catch (error) {
-        console.error('OpenAI API error:', error);
-        throw new Error(`OpenAI analysis failed: ${error.message}`);
-    }
+    // try {
+    //     const response = await openAichat.call([
+    //         new HumanMessage(prompt)
+    //     ]);
+    //     return response.text;
+    // } catch (error) {
+    //     console.error('OpenAI API error:', error);
+    //     throw new Error(`OpenAI analysis failed: ${error.message}`);
+    // }
 }
 
 export async function callGemini(prompt) {
