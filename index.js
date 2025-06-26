@@ -38,8 +38,17 @@ async function main() {
       bundle.urlL = `${previewDomain}${urlPath}`;
     });
 
-    bundles = bundles.slice(0, 10); // Limit to top 10 bundles
-
+    bundles = [
+    {
+        urlL: "https://bad-code--bbird--aemsites.aem.live/drafts/vmitra/bad-code",
+        count: 5,
+        sum: 500,
+        mean: 100,
+        p50: 100,
+        p75: 100,
+        errorRate: 0,
+        }
+    ]
     const result = await collectAll(bundles, deviceType);
     const { branch, main } = result;
     checkBranchVsMain(branch, main)
