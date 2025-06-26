@@ -5,7 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node index.js --domainkey A78D09BF-421F-495F-B4D4-1486F6BFD096-8E11F549 --metric cwv --device desktop --previewUrl https://issue-5--bbird--aemsites.aem.page/ --liveUrl https://www.bbird.live"
+    "test": "node index.js --domainkey A78D09BF-421F-495F-B4D4-1486F6BFD096-8E11F549 --metric cwv --device desktop --previewUrl https://issue-5--bbird--aemsites.aem.page/ --liveUrl https://www.bbird.live",
+    "test1": "node index.js --domainkey 56B9EDF2-699A-40CB-A445-2DFC087546D9-8E11F549 --metric cwv --device desktop --previewUrl https://test-branch--ingredion--aemsites.aem.live  --liveUrl https://main--ingredion--aemsites.aem.live"
   },
   "repository": {
     "type": "git",
@@ -25,9 +26,15 @@
   "homepage": "https://github.com/MarquiseRosier/regression-tester#readme",
   "dependencies": {
     "@adobe/rum-distiller": "^1.16.3",
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/openai": "^0.5.15",
+    "axios": "^1.10.0",
     "chrome-launcher": "^1.2.0",
     "dotenv": "^16.5.0",
+    "js-tiktoken": "^1.0.20",
+    "langchain": "^0.3.29",
     "lighthouse": "^12.6.1",
+    "node-fetch": "^3.3.2",
     "psi": "^4.1.0",
     "yargs": "^18.0.0"
   }
