@@ -1,5 +1,5 @@
 import {AzureChatOpenAI} from '@langchain/openai';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import {GoogleGenerativeAI} from '@google/generative-ai';
 import dotenv from "dotenv";
 // Replace these with your actual configuration
 dotenv.config();
@@ -10,20 +10,20 @@ const tokenLimits = {
 
 const basePath = `https://${process.env.AZURE_OPENAI_API_INSTANCE_NAME}.openai.azure.com/`;
 
-const openAichat = new AzureChatOpenAI({
-    model,
-    maxTokens: tokenLimits.output,
-    openAIApiKey: process.env.AZURE_OPENAI_API_KEY,
-    openAIBasePath: basePath,
-    azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION, // or your preferred version
-    azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
-    configuration: {
-        basePath,
-    },
-});
+// const openAichat = new AzureChatOpenAI({
+//     model,
+//     maxTokens: tokenLimits.output,
+//     openAIApiKey: process.env.AZURE_OPENAI_API_KEY,
+//     openAIBasePath: basePath,
+//     azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION, // or your preferred version
+//     azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+//     configuration: {
+//         basePath,
+//     },
+// });
 
 // Google Gemini setup
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL });
+const geminiModel = genAI.getGenerativeModel({model: process.env.GEMINI_MODEL});
 
-export { openAichat, geminiModel };
+export {geminiModel};
