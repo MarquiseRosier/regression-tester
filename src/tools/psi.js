@@ -90,15 +90,15 @@ export async function collectAll(pages, deviceType) {
         const {urlL} = page;
         const updatedUrl = urlL.replace(/^(https:\/\/)[^/]*?(?=--)/, '$1main');
 
-        experimentalPages.push(collect(updatedUrl, 'desktop'));
-        // experimentalPages.push(collect(updatedUrl, 'mobile'));
+        // experimentalPages.push(collect(updatedUrl, 'desktop'));
+        experimentalPages.push(collect(updatedUrl, 'mobile'));
     });
 
     pages.forEach((page) => {
         const {urlL} = page;
 
-        realPages.push(collect(urlL, 'desktop'));
-        // realPages.push(collect(urlL, 'mobile'));
+        // realPages.push(collect(urlL, 'desktop'));
+        realPages.push(collect(urlL, 'mobile'));
     })
 
 
