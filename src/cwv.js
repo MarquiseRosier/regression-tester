@@ -69,6 +69,8 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
                 if (response && response?.hasAnyRegression) {
                     hasRegressionUrls.push(branchUrl);
                     console.log(`❌ Regression detected for ${branchUrl}`);
+                } else if (response && response?.hasAnyRegression === false) {
+                    console.log(`✅ No regression detected for ${branchUrl}`);
                 }
 
                 console.log(response.result);
