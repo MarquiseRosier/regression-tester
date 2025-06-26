@@ -55,9 +55,12 @@ export async function processCwv(metric, deviceType, liveUrl, previewUrl, domain
 
                 const result = await compareBundles(mainUrl, branchUrl, mainPromptData, branchPromptData);
                 console.log(`\n--------------------Bundle ${j + 1}---------------------`);
+                //print the urls
+                console.log(`Main URL: ${mainUrl}`);
+                console.log(`Branch URL: ${branchUrl}`);
                 console.log(result);
                 console.log('\n\n');
-                console.log(`\n\n\n\n\n\--------------------Bundle ${j + 1} processed successfully.---------------------`);
+                console.log(`--------------------Bundle ${j + 1} processed successfully.---------------------`);
                 console.log('\n\n\n\n');
             }
 

@@ -6,7 +6,7 @@ let encoder;
 
 export async function compareBundles(mainUrl, branchUrl, psiData1, psiData2) {
     const prompt = `
-You are a web performance analyst comparing PageSpeed Insights reports. Return analysis in GitHub-flavored Markdown.
+You are a web performance analyst comparing PageSpeed Insights reports. Return analysis in GitHub-flavored.
 
 **URLs Being Analyzed:**
 - Production: ${mainUrl}
