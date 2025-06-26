@@ -49,34 +49,48 @@ async function runLighthouse(url, deviceType){
 
 export async function checkBranchVsMain(branchPages, mainPages) {
   const metrics = ['cls', 'lcp', 'inp', 'ettfb'];
-  let hasRegression = false;
+  const regressions = [];
 
   branchPages.forEach((branchResult, idx) => {
     const mainResult = mainPages[idx];
-    const url = branchResult.url || `Page ${idx}`; // Optional, if your collect() includes URL
+    const url = branchResult.url || `Page ${idx}`; // Optional: if collect() includes url
 
     metrics.forEach((metric) => {
       const branchValue = branchResult[metric] ?? null;
       const mainValue = mainResult[metric] ?? null;
 
-      // Skip if either is missing (optional, remove this block if you want to fail on missing data)
       if (branchValue === null || mainValue === null) return;
 
       if (branchValue > mainValue) {
+        const regression = {
+          url,
+          metric,
+          branchValue,
+          mainValue
+        };
+
+        regressions.push(regression);
+
         console.log(
           `❌ Regression in [${metric.toUpperCase()}] on ${url}: branch=${branchValue.toFixed(3)} → main=${mainValue.toFixed(3)}`
         );
-        hasRegression = true;
       }
     });
   });
 
-  if (hasRegression) {
+  if (regressions.length > 0) {
     console.log('\n❌ Build failed: Branch introduces performance regressions compared to main.\n');
+    console.log('Full Regression JSON:\n', JSON.stringify(regressions, null, 2));
+
+    // Optional: Save to file (if you want to upload later)
+    // fs.writeFileSync('regressions.json', JSON.stringify(regressions, null, 2));
+
     process.exit(1);
   } else {
     console.log('\n✅ No regressions: Branch performance is as good or better than main.\n');
   }
+
+  return regressions;
 }
 
 export async function collect(pageUrl, deviceType) {

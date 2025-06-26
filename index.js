@@ -2,10 +2,31 @@ import dotenv from 'dotenv';
 import { getAllBundles } from './src/tools/bundles.js';
 import { parseArguments } from './src/cli/cliIndex.js';
 import { collectAll, checkBranchVsMain } from './src/tools/psi.js';
+import { analyzeDiffForRegressions } from './src/agents/candidates.js';
+import { explainRegressionRootCause } from './src/agents/problem.js';
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables
 dotenv.config();
+
+// For __dirname support in ESM:
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Absolute path to the diff file (since you run from regression-tester/ directory)
+const diffFilePath = path.resolve(__dirname, '..', 'full_diff.txt');
+
+let fullDiff = '';
+
+try {
+  fullDiff = fs.readFileSync(diffFilePath, 'utf-8');
+  console.log('\n✅ Loaded git diff for ML analysis.\n');
+} catch (error) {
+  console.warn('⚠️ No git diff found at expected path. Skipping diff-based ML analysis.');
+}
 
 async function main() {
   // Parse command line arguments
@@ -51,7 +72,10 @@ async function main() {
     ]
     const result = await collectAll(bundles, deviceType);
     const { branch, main } = result;
-    checkBranchVsMain(branch, main)
+    const regressions = await checkBranchVsMain(branch, main)
+
+    const candidates = await analyzeDiffForRegressions(fullDiff, regressions)
+    const problem = await explainRegressionRootCause(fullDiff, regressions, candidates)
   }
 }
 
